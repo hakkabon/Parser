@@ -1,24 +1,33 @@
-// swift-tools-version: 6.1
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "Parser",
+    platforms: [.macOS(.v11), .iOS(.v14)],
     products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "Parser",
-            targets: ["Parser"]),
+        .library(name: "Parser", targets: ["Parser"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/hakkabon/Grammar.git", branch: "main"),
+        .package(url: "https://github.com/hakkabon/Lexer.git", branch: "main"),
+        .package(url: "https://github.com/hakkabon/TerminalColors.git", from: "0.0.1"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "Parser"),
+            name: "Parser",
+            dependencies: [
+                .product(name: "Grammar", package: "Grammar"),
+                .product(name: "Lexer", package: "Lexer"),
+                .product(name: "TerminalColors", package: "TerminalColors"),
+            ]
+        ),
         .testTarget(
             name: "ParserTests",
-            dependencies: ["Parser"]
+            dependencies: [
+                "Parser",
+            ]
         ),
     ]
 )

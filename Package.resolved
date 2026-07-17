@@ -1,0 +1,105 @@
+{
+  "originHash" : "7bc90ec36ad59ab262484da6094b488d374ec972c036af499cea331abf4a7727",
+  "pins" : [
+    {
+      "identity" : "grammar",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hakkabon/Grammar.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "6328c5ee63fcc6565d8960905b84826c2cb86ab3"
+      }
+    },
+    {
+      "identity" : "grammardiagram",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hakkabon/GrammarDiagram.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "dc17ab061a1614ba0692be06aa69043b45bbbcd4"
+      }
+    },
+    {
+      "identity" : "grammartokenizer",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hakkabon/GrammarTokenizer.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "880af85a1f5809866f9656405c801fd04bcb4df9"
+      }
+    },
+    {
+      "identity" : "graphviz",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SwiftDocOrg/GraphViz",
+      "state" : {
+        "revision" : "74b6cbd8c5ecea9f64d84c4e1c88d65604dd033f",
+        "version" : "0.4.1"
+      }
+    },
+    {
+      "identity" : "lexer",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hakkabon/Lexer.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "2796841eb5f2f82d9d77e84368762824f32b00be"
+      }
+    },
+    {
+      "identity" : "lexer-fsa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hakkabon/Lexer-FSA.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "5289a38e507bbf63863699a1eb9ac7a4d19aafba"
+      }
+    },
+    {
+      "identity" : "shellout",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/JohnSundell/ShellOut.git",
+      "state" : {
+        "revision" : "e1577acf2b6e90086d01a6d5e2b8efdaae033568",
+        "version" : "2.3.0"
+      }
+    },
+    {
+      "identity" : "swift-algorithms",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-algorithms",
+      "state" : {
+        "revision" : "87e50f483c54e6efd60e885f7f5aa946cee68023",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "swift-argument-parser",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-argument-parser.git",
+      "state" : {
+        "revision" : "6a52f3251125d74daf04fcbd5e6f08a75d074382",
+        "version" : "1.8.2"
+      }
+    },
+    {
+      "identity" : "swift-numerics",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-numerics.git",
+      "state" : {
+        "revision" : "0c0290ff6b24942dadb83a929ffaaa1481df04a2",
+        "version" : "1.1.1"
+      }
+    },
+    {
+      "identity" : "terminalcolors",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/hakkabon/TerminalColors.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "d1ef429802e808ecdde4674221d892ae6d9f2215"
+      }
+    }
+  ],
+  "version" : 3
+}
