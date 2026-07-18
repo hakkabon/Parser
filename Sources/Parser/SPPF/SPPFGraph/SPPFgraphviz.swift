@@ -10,10 +10,14 @@ import Foundation
 import OSLog
 
 
-extension SPPFGraph {
+import Foundation
+import OSLog
+
+
+public extension SPPFGraph where Label: SPPFLabel {
     
     /// Generate Graphviz DOT representation of the SPPF
-    public var graphviz: String {
+    var graphviz: String {
         var dot = "digraph \"SPPF\" {\n"
         dot += "    rankdir=TB;\n"
         dot += "    node [fontname=\"Arial\", fontsize=10];\n"
@@ -21,7 +25,7 @@ extension SPPFGraph {
         
         // Get all nodes and create unique identifiers
         let allNodes = getAllNodes().sorted()
-        var nodeIds: [SPPFNode: String] = [:]
+        var nodeIds: [SPPFNode<Label>: String] = [:]
         
         // Generate unique node IDs and define nodes
         for (index, node) in allNodes.enumerated() {
@@ -50,7 +54,7 @@ extension SPPFGraph {
     }
     
     /// Get visual attributes for different node types
-    private func getNodeAttributes(_ node: SPPFNode) -> (label: String, shape: String, color: String, style: String) {
+    private func getNodeAttributes(_ node: SPPFNode<Label>) -> (label: String, shape: String, color: String, style: String) {
         switch node {
         case let .leaf(label, leftExtent, rightExtent):
             let strippedLabel = label.description.replacingOccurrences(of: "\"", with: "")
@@ -70,7 +74,7 @@ extension SPPFGraph {
             )
             
         case let .intermediate(labelNode, leftExtent, rightExtent):
-            let truncatedLabel = truncateLabel(labelNode.graphviz, maxLength: 20)
+            let truncatedLabel = truncateLabel(labelNode.description, maxLength: 20)
             return (
                 label: "\(truncatedLabel), \(leftExtent), \(rightExtent)",
                 shape: "box",
@@ -79,7 +83,7 @@ extension SPPFGraph {
             )
             
         case let .packed(labelNode, leftExtent, rightExtent, pivot):
-            let truncatedLabel = truncateLabel(labelNode.graphviz, maxLength: 20)
+            let truncatedLabel = truncateLabel(labelNode.description, maxLength: 20)
             return (
                 label: "\(truncatedLabel), \(leftExtent), \(rightExtent), \(pivot)",
                 shape: "box",
@@ -108,10 +112,10 @@ extension SPPFGraph {
 
 // MARK: - Create Graphviz output with additional styling
 
-extension SPPFGraph {
+public extension SPPFGraph where Label: SPPFLabel {
 
     /// Generate a more detailed Graphviz representation with additional styling
-    public func graphviz(title: String = "SPPF", showExtents: Bool = true, clusterByExtent: Bool = false) -> String {
+    func graphviz(title: String = "SPPF", showExtents: Bool = true, clusterByExtent: Bool = false) -> String {
         var dot = "digraph \"\(title)\" {\n"
         dot += "    rankdir=TB;\n"
         dot += "    compound=true;\n"
@@ -119,7 +123,7 @@ extension SPPFGraph {
         dot += "    edge [fontname=\"Arial\", fontsize=8];\n\n"
         
         let allNodes = getAllNodes().sorted()
-        var nodeIds: [SPPFNode: String] = [:]
+        var nodeIds: [SPPFNode<Label>: String] = [:]
         
         // Group nodes by extent if clustering is enabled
         if clusterByExtent {
@@ -190,7 +194,7 @@ extension SPPFGraph {
     }
     
     /// Get detailed node attributes with more styling options
-    private func getDetailedNodeAttributes(_ node: SPPFNode, showExtents: Bool) -> (label: String, shape: String, color: String, style: String) {
+    private func getDetailedNodeAttributes(_ node: SPPFNode<Label>, showExtents: Bool) -> (label: String, shape: String, color: String, style: String) {
         switch node {
         case let .leaf(label, leftExtent, rightExtent):
             let displayLabel = showExtents ? "\(label)\\n(\(leftExtent),\(rightExtent))" : label
@@ -233,7 +237,7 @@ extension SPPFGraph {
     }
     
     /// Format production labels for better readability
-    private func formatProductionLabel(_ labelNode: NodeLabel) -> String {
+    private func formatProductionLabel(_ labelNode: Label) -> String {
         let goal = labelNode.goal.name
         let symbols = labelNode.symbols.map { $0 }
         let position = labelNode.position
@@ -256,7 +260,7 @@ extension SPPFGraph {
     }
     
     /// Get edge styling based on node types
-    private func getEdgeStyle(from parent: SPPFNode, to child: SPPFNode) -> String {
+    private func getEdgeStyle(from parent: SPPFNode<Label>, to child: SPPFNode<Label>) -> String {
         switch (parent, child) {
         case (.symbol, .packed):
             return "solid"
@@ -272,7 +276,7 @@ extension SPPFGraph {
 
 // Helper extension for GraphNode to get extents
 
-extension SPPFNode {
+public extension SPPFNode {
     var leftRightExtents: (Int, Int) {
         switch self {
         case let .leaf(_, leftExtent, rightExtent): return (leftExtent, rightExtent)

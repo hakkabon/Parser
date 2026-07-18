@@ -9,31 +9,33 @@
 import Foundation
 import OSLog
 
-public class SPPFGraph {
-    private var graph: [SPPFNode: Set<SPPFNode>] = [:]
+public class SPPFGraph<Label: Hashable & Codable & CustomStringConvertible> {
+    private var graph: [SPPFNode<Label>: Set<SPPFNode<Label>>] = [:]
+    
+    public init() {}
     
     /// Add a node to the graph.
     /// - parameter node: The node to be added.
-    func add(_ node: SPPFNode) {
+    public func add(_ node: SPPFNode<Label>) {
         guard graph.index(forKey: node) == nil else { return }
         graph[node] = []
     }
     
-    func addEdge(from parent: SPPFNode, to child: SPPFNode) {
+    public func addEdge(from parent: SPPFNode<Label>, to child: SPPFNode<Label>) {
         graph[parent, default: []].insert(child)
         add(child)
     }
     
-    func getChildren(of node: SPPFNode) -> Set<SPPFNode> {
+    public func getChildren(of node: SPPFNode<Label>) -> Set<SPPFNode<Label>> {
         return graph[node] ?? Set()
     }
     
-    func getAllNodes() -> [SPPFNode] {
+    public func getAllNodes() -> [SPPFNode<Label>] {
         return Array(graph.keys)
     }
 
     // Get nodes that can be expanded (non-terminals and intermediates not yet processed)
-    func getExtendableNodes() -> [SPPFNode] {
+    public func getExtendableNodes() -> [SPPFNode<Label>] {
         graph.keys.filter { node in
             switch node {
             case .leaf(_,_,_):
@@ -53,16 +55,16 @@ public class SPPFGraph {
 
         let nodes = graph.keys.sorted()
         for node in nodes {
-            Logger.sppf.trace("  \(node)")
+            Logger.sppf.trace("  \(node.description)")
             let chidren = graph[node]!
             for child in chidren {
-                Logger.sppf.trace("    -> \(child)")
+                Logger.sppf.trace("    -> \(child.description)")
             }
         }
     }
     
-    func cleanup() {
-        var productive = Set<SPPFNode>()
+    public func cleanup() {
+        var productive = Set<SPPFNode<Label>>()
         
         for node in graph.keys {
             if case .leaf = node {
@@ -101,7 +103,7 @@ public class SPPFGraph {
             }
         }
         
-        var newGraph: [SPPFNode: Set<SPPFNode>] = [:]
+        var newGraph: [SPPFNode<Label>: Set<SPPFNode<Label>>] = [:]
         for (node, children) in graph {
             if productive.contains(node) {
                 let productiveChildren = children.filter { productive.contains($0) }

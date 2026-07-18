@@ -9,10 +9,16 @@
 import Foundation
 
 /// The outcome of a parse attempt.
-public struct ParseResult {
+public struct ParseResult<Label: Hashable & Codable & CustomStringConvertible> {
     public let isSuccessful: Bool
-    public let bsr: Set<BSR>
-    public let sppfGraph: SPPFGraph?
+    public let bsr: Set<BSR<Label>>
+    public let sppfGraph: SPPFGraph<Label>?
+
+    public init(isSuccessful: Bool, bsr: Set<BSR<Label>>, sppfGraph: SPPFGraph<Label>?) {
+        self.isSuccessful = isSuccessful
+        self.bsr = bsr
+        self.sppfGraph = sppfGraph
+    }
 
     /// Returns `true` if any non-terminal or intermediate SPPF node has more than one
     /// packed-node child, indicating that the grammar is locally ambiguous on this input.
@@ -35,6 +41,7 @@ public struct ParseResult {
 /// A parser that recognises general (including ambiguous) context-free grammars and can
 /// produce every derivation of an input string as a structured parse forest.
 public protocol GeneralizedParser {
+    associatedtype Label: Hashable & Codable & CustomStringConvertible
 
     /// Run the recogniser/parser on `string` and return the raw `ParseResult`.
     ///
@@ -44,7 +51,7 @@ public protocol GeneralizedParser {
     /// - Parameter string: Input string to parse.
     /// - Returns: A `ParseResult` describing success, the BSR set, and the SPPF graph.
     /// - Throws: A `SyntaxError` if the string is not in the recognised language.
-    func parse(_ string: String) throws -> ParseResult
+    func parse(_ string: String) throws -> ParseResult<Label>
 
     /// Returns **all** parse trees for `string`.
     ///

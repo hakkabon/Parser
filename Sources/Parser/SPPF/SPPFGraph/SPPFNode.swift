@@ -9,7 +9,7 @@
 import Foundation
 
 /// SPPF Node types following Scott & Johnstone:
-public enum SPPFNode: Codable {
+public enum SPPFNode<Label: Hashable>: Codable where Label: Codable {
     /// Terminal and epsilon leaf nodes. The `label` for an epsilon leaf is the
     /// grammar's configured epsilon meta character (e.g. `"ε"` or `"λ"`, set via
     /// `Grammar.epsilon` and applied in `ExtractSPPF.makePackedNode`). It is a
@@ -19,12 +19,12 @@ public enum SPPFNode: Codable {
     /// symbol nodes: non-terminals and terminals
     case symbol(label: String, leftExtent: Int, rightExtent: Int)
     /// intermediate nodes: represent partial derivations
-    case intermediate(label: NodeLabel, leftExtent: Int, rightExtent: Int)
+    case intermediate(label: Label, leftExtent: Int, rightExtent: Int)
     /// packed nodes: represent specific production applications
-    case packed(label: NodeLabel, leftExtent: Int, rightExtent: Int, pivot: Int)
+    case packed(label: Label, leftExtent: Int, rightExtent: Int, pivot: Int)
 }
 
-extension SPPFNode: CustomStringConvertible {
+extension SPPFNode: CustomStringConvertible where Label: CustomStringConvertible {
     
     public var description: String {
         switch self {
@@ -69,19 +69,6 @@ extension SPPFNode: Equatable {
     
     public static func == (lhs: SPPFNode, rhs: SPPFNode) -> Bool {
         switch (lhs,rhs) {
-        case (.leaf(_,_,_), .symbol(_,_,_)): return false
-        case (.leaf(_,_,_), .intermediate(_,_,_)): return false
-        case (.leaf(_,_,_), .packed(_,_,_,_)): return false
-        case (.symbol(_,_,_), .leaf(_,_,_)): return false
-        case (.symbol(_,_,_), .intermediate(_,_,_)): return false
-        case (.symbol(_,_,_), .packed(_,_,_,_)): return false
-        case (.intermediate(_,_,_), .leaf(_,_,_)): return false
-        case (.intermediate(_,_,_), .symbol(_,_,_)): return false
-        case (.intermediate(_,_,_), .packed(_,_,_,_)): return false
-        case (.packed(_,_,_,_), .leaf(_,_,_)): return false
-        case (.packed(_,_,_,_), .symbol(_,_,_)): return false
-        case (.packed(_,_,_,_), .intermediate(_,_,_)): return false
-
         case let (.leaf(lhsLabel, lhsLeftExtent, lhsRightExtent), .leaf(rhsLabel, rhsLeftExtent, rhsRightExtent)):
             return lhsLabel == rhsLabel && lhsLeftExtent == rhsLeftExtent && lhsRightExtent == rhsRightExtent
         case let (.symbol(lhsLabel, lhsLeftExtent, lhsRightExtent), .symbol(rhsLabel, rhsLeftExtent, rhsRightExtent)):
@@ -90,11 +77,13 @@ extension SPPFNode: Equatable {
             return lhsLabel == rhsLabel && lhsLeftExtent == rhsLeftExtent && lhsRightExtent == rhsRightExtent
         case let (.packed(lhsLabel, lhsLeftExtent, lhsRightExtent, lhsPivot), .packed(rhsLabel, rhsLeftExtent, rhsRightExtent, rhsPivot)):
             return lhsLabel == rhsLabel && lhsLeftExtent == rhsLeftExtent && lhsRightExtent == rhsRightExtent && lhsPivot == rhsPivot
+        default:
+            return false
         }
     }
 }
 
-extension SPPFNode: Comparable {
+extension SPPFNode: Comparable where Label: CustomStringConvertible {
     
     public static func < (lhs: SPPFNode, rhs: SPPFNode) -> Bool {
         // First compare by type
@@ -106,8 +95,8 @@ extension SPPFNode: Comparable {
         }
         
         // Then by label
-        let lhsLabel = lhs.label
-        let rhsLabel = rhs.label
+        let lhsLabel = lhs.stringLabel
+        let rhsLabel = rhs.stringLabel
         
         if lhsLabel != rhsLabel {
             return lhsLabel < rhsLabel
@@ -133,7 +122,7 @@ extension SPPFNode: Comparable {
         }
     }
     
-    private var label: String {
+    private var stringLabel: String {
         switch self {
         case let .leaf(label, _, _): return label
         case let .symbol(label, _, _): return label

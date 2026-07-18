@@ -9,9 +9,9 @@
 import Foundation
 import Grammar
 
-extension Parser {
+public extension SPPFGraph where Label: SPPFLabel {
 
-    // MARK: - Public entry points (called from EarleyParserParse.swift)
+    // MARK: - Public entry points
 
     /// Recursively extract all derivations for `node` from the SPPF graph.
     ///
@@ -20,21 +20,19 @@ extension Parser {
     ///
     /// - Parameters:
     ///   - node:   The SPPF graph node to expand.
-    ///   - sppf:   The shared-packed-parse-forest graph.
     ///   - ranges: Per-token-index source ranges (`ranges[i]` is the `Range<String.Index>`
     ///             of the token at index `i`) — used to map token indices → `String.Index`
     ///             ranges. Sourced from whichever `TokenStream` drove the parse, so this
     ///             file has no dependency on any concrete tokenizer's token type.
     ///   - string: The original input string.
-    ///   - memo:   Memoisation table keyed by `GraphNode`.  An entry maps a node to
+    ///   - memo:   Memoisation table keyed by `SPPFNode`.  An entry maps a node to
     ///             the list-of-alternatives already computed for it.  A sentinel value
     ///             of `nil` indicates the node is currently being expanded (cycle guard).
     func extractNodeAlternatives(
-        node: SPPFNode,
-        sppf: SPPFGraph,
+        node: SPPFNode<Label>,
         ranges: [Range<String.Index>],
         string: String,
-        memo: inout [SPPFNode: [[ParseTree]]?]
+        memo: inout [SPPFNode<Label>: [[ParseTree]]?]
     ) -> [[ParseTree]] {
 
         // --- Cycle guard / memoisation ---
@@ -45,7 +43,7 @@ extension Parser {
         // Mark as "in progress" to break cycles.
         memo[node] = .some(nil)         // Optional<[[ParseTree]]>.some(.none) == cycle sentinel
 
-        let result = _expandNode(node: node, sppf: sppf, ranges: ranges, string: string, memo: &memo)
+        let result = _expandNode(node: node, ranges: ranges, string: string, memo: &memo)
 
         memo[node] = .some(result)      // store the real result
         return result
@@ -54,11 +52,10 @@ extension Parser {
     // MARK: - Internal expansion helpers
 
     private func _expandNode(
-        node: SPPFNode,
-        sppf: SPPFGraph,
+        node: SPPFNode<Label>,
         ranges: [Range<String.Index>],
         string: String,
-        memo: inout [SPPFNode: [[ParseTree]]?]
+        memo: inout [SPPFNode<Label>: [[ParseTree]]?]
     ) -> [[ParseTree]] {
 
         switch node {
@@ -72,13 +69,13 @@ extension Parser {
         // ── Symbol: non-terminal ───────────────────────────────────────────────
         case let .symbol(label, _, _):
             let nonTerminal = NonTerminal(name: label)
-            let children = sppf.getChildren(of: node)
+            let children = self.getChildren(of: node)
             var alternatives: [[ParseTree]] = []
 
             for child in children {
                 guard case .packed = child else { continue }
                 let packedAlts = extractNodeAlternatives(
-                    node: child, sppf: sppf, ranges: ranges, string: string, memo: &memo)
+                    node: child, ranges: ranges, string: string, memo: &memo)
                 for alt in packedAlts {
                     alternatives.append([.node(nonTerminal, children: alt)])
                 }
@@ -91,12 +88,12 @@ extension Parser {
 
         // ── Intermediate: partial production prefix ───────────────────────────
         case .intermediate:
-            let children = sppf.getChildren(of: node)
+            let children = self.getChildren(of: node)
             var alternatives: [[ParseTree]] = []
             for child in children {
                 guard case .packed = child else { continue }
                 let packedAlts = extractNodeAlternatives(
-                    node: child, sppf: sppf, ranges: ranges, string: string, memo: &memo)
+                    node: child, ranges: ranges, string: string, memo: &memo)
                 alternatives.append(contentsOf: packedAlts)
             }
             return alternatives
@@ -106,27 +103,26 @@ extension Parser {
             return _expandPackedNode(
                 label: label,
                 leftExtent: leftExtent, rightExtent: rightExtent, pivot: pivot,
-                node: node, sppf: sppf, ranges: ranges, string: string, memo: &memo)
+                node: node, ranges: ranges, string: string, memo: &memo)
         }
     }
 
     private func _expandPackedNode(
-        label: NodeLabel,
+        label: Label,
         leftExtent: Int,
         rightExtent: Int,
         pivot: Int,
-        node: SPPFNode,
-        sppf: SPPFGraph,
+        node: SPPFNode<Label>,
         ranges: [Range<String.Index>],
         string: String,
-        memo: inout [SPPFNode: [[ParseTree]]?]
+        memo: inout [SPPFNode<Label>: [[ParseTree]]?]
     ) -> [[ParseTree]] {
 
-        let children = sppf.getChildren(of: node)
+        let children = self.getChildren(of: node)
         let alpha = Array(label.symbols.prefix(label.position))
 
-        var leftChild: SPPFNode? = nil
-        var rightChild: SPPFNode? = nil
+        var leftChild: SPPFNode<Label>? = nil
+        var rightChild: SPPFNode<Label>? = nil
 
         // Identify left / right children by their extents and symbol type.
         for child in children {
@@ -163,7 +159,7 @@ extension Parser {
         let leftAlts: [[ParseTree]]
         if let left = leftChild {
             leftAlts = extractNodeAlternatives(
-                node: left, sppf: sppf, ranges: ranges, string: string, memo: &memo)
+                node: left, ranges: ranges, string: string, memo: &memo)
         } else {
             leftAlts = [[]]
         }
@@ -171,7 +167,7 @@ extension Parser {
         let rightAlts: [[ParseTree]]
         if let right = rightChild {
             rightAlts = extractNodeAlternatives(
-                node: right, sppf: sppf, ranges: ranges, string: string, memo: &memo)
+                node: right, ranges: ranges, string: string, memo: &memo)
         } else {
             rightAlts = [[]]
         }
@@ -188,7 +184,7 @@ extension Parser {
 
     // MARK: - Small helpers
 
-    func childExtents(_ node: SPPFNode) -> (Int, Int) {
+    func childExtents(_ node: SPPFNode<Label>) -> (Int, Int) {
         switch node {
         case let .leaf(_, l, r):         return (l, r)
         case let .symbol(_, l, r):       return (l, r)
@@ -197,7 +193,7 @@ extension Parser {
         }
     }
 
-    private func matchSymbol(_ symbol: Symbol, node: SPPFNode) -> Bool {
+    private func matchSymbol(_ symbol: Symbol, node: SPPFNode<Label>) -> Bool {
         switch (symbol, node) {
         case (.terminal(let t),    .leaf(let label, _, _)):   return t.description == label
         case (.nonTerminal(let nt),.symbol(let label, _, _)): return nt.name == label

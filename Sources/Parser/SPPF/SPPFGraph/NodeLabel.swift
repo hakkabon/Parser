@@ -9,7 +9,7 @@
 import Foundation
 import Grammar
 
-public struct NodeLabel: Codable {
+public struct NodeLabel: Codable, SPPFLabel {
     public let goal: NonTerminal
     public let symbols: [Symbol]
     public let position: Int

@@ -11,9 +11,9 @@ import OSLog
 
 // MARK: - Additional Debugging Methods
 
-extension SPPFGraph {
+public extension SPPFGraph {
     
-    public func log() {
+    func log() {
         print("SPPF Graph Debug")
         let allNodes = getAllNodes().sorted()
         
@@ -41,10 +41,10 @@ extension SPPFGraph {
         }
         
         // Check for cycles (simplified)
-        var visited: Set<SPPFNode> = []
-        var inPath: Set<SPPFNode> = []
+        var visited: Set<SPPFNode<Label>> = []
+        var inPath: Set<SPPFNode<Label>> = []
         
-        func hasCycle(_ node: SPPFNode) -> Bool {
+        func hasCycle(_ node: SPPFNode<Label>) -> Bool {
             if inPath.contains(node) {
                 print("⚠️  Cycle detected at node: \(node)")
                 return true
