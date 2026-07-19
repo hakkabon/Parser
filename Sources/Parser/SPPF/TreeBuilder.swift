@@ -1,6 +1,6 @@
 //
 //  TreeBuilder.swift
-//  Earley-Parser
+//  Parser
 //
 //  Created by Ulf Akerstedt-Inoue on 2026/06/26.
 //  Copyright © 2026 hakkabon software. All rights reserved.

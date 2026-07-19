@@ -1,6 +1,6 @@
 //
 //  SPPFgraphviz.swift
-//  Earley-Parser
+//  Parser
 //
 //  Created by Ulf Akerstedt-Inoue on 2025/09/23.
 //  Copyright © 2025 hakkabon software. All rights reserved.
@@ -8,11 +8,6 @@
 
 import Foundation
 import OSLog
-
-
-import Foundation
-import OSLog
-
 
 public extension SPPFGraph where Label: SPPFLabel {
     

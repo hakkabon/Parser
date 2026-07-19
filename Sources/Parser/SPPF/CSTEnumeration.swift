@@ -1,6 +1,6 @@
 //
 //  CSTEnumeration.swift
-//  Earley-Parser
+//  Parser
 //
 //  Created by Ulf Akerstedt-Inoue on 2026/06/03.
 //  Copyright © 2026 hakkabon software. All rights reserved.

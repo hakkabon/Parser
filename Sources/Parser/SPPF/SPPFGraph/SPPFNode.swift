@@ -1,6 +1,6 @@
 //
 //  SPPFNode.swift
-//  Earley-Parser
+//  Parser
 //
 //  Created by Ulf Akerstedt-Inoue on 2024/07/15.
 //  Copyright © 2020 hakkabon software. All rights reserved.

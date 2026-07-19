@@ -1,3 +1,11 @@
+//
+//  Logger+Parser.swift
+//  Parser
+//
+//  Created by Ulf Akerstedt-Inoue on 2023/08/11.
+//  Copyright © 2023 hakkabon software. All rights reserved.
+//
+
 import Foundation
 import OSLog
 
