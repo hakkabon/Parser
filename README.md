@@ -17,6 +17,7 @@ If you're writing a new parser for the `hakkabon` grammar toolkit — Earley, CY
 - [CST enumeration: from SPPF to `ParseTree`](#cst-enumeration-from-sppf-to-parsetree)
 - [`SyntaxTree<Node, Leaf>` and `ParseTree`](#syntaxtreenode-leaf-and-parsetree)
 - [`DeterministicParser` and `GeneralizedParser`](#deterministicparser-and-generalizedparser)
+- [Shared deterministic parse diagnostics](#shared-deterministic-parse-diagnostics)
 - [Graphviz output](#graphviz-output)
 - [Logging and debugging](#logging-and-debugging)
 - [Wiring up a new parser: step by step](#wiring-up-a-new-parser-step-by-step)
@@ -300,10 +301,30 @@ public struct ParseResult<Label: Hashable & Codable & CustomStringConvertible> {
 A few conventions worth calling out, since they're conventions rather than anything the type system enforces:
 
 - **On a syntactic failure** (well-formed tokens, just not in the language), `parse(_:)` should return `ParseResult(isSuccessful: false, bsr: ..., sppfGraph: nil)` rather than throwing — `isSuccessful` exists precisely so callers can distinguish "no derivation found" from an exceptional failure. Reserve `throws` for genuine errors bubbling up from tokenization (an invalid token, an unterminated string, etc.) — i.e. situations `Terminal` resolution itself can't recover from.
-- **`syntaxTree(for:)`/`allSyntaxTrees(for:)`, by contrast, throw on failure** — they're the ergonomic, tree-returning entry points, and "the input isn't in the language" is exactly the kind of failure a `throws` function is for. Each concrete parser package keeps and throws its own local error type (`ParseError` in CYK-/RNGLR-Parser, `SyntaxError` in Earley-Parser) — this module deliberately has no shared error type of its own, since what counts as a useful diagnostic (a token position? a message? a grammar rule reference?) is genuinely parser-specific.
+- **`syntaxTree(for:)`/`allSyntaxTrees(for:)`, by contrast, throw on failure** — they're the ergonomic, tree-returning entry points, and "the input isn't in the language" is exactly the kind of failure a `throws` function is for. Concrete packages may retain algorithm-specific thrown errors, while recoverable deterministic entry points can use the shared diagnostic model below.
 - `hasAmbiguity` only inspects `sppfGraph`; it says nothing if `sppfGraph` is `nil`. It's a *local* ambiguity signal (some node has more than one packed-node child derivation) — not a claim about whether the grammar is ambiguous in general, only whether this particular input exercised an ambiguity.
 
 `ParseResult.bsr` is for diagnostics and tooling (every `gtool`'s `--analysis sppf` case prints it) — nothing in this module's own SPPF-construction or tree-extraction code reads it back. If your algorithm's own BSR bookkeeping doesn't naturally produce a `pivot` for every entry (RNGLR-Parser's `BSRTriple` doesn't — see [Design notes](#design-notes-and-known-gotchas)), it's fine to fill `pivot` with a documented placeholder purely for this field; just don't let anything load-bearing depend on it being meaningful.
+
+## Shared deterministic parse diagnostics
+
+Recovering deterministic parsers share data and presentation while retaining their own recovery algorithms:
+
+```swift
+public struct ParseDiagnostic: Error { /* source range, reason, message,
+                                          expected/found terminals, context */ }
+public enum ParseStatus { case accepted, recovered, rejected }
+public enum RecoveryEdit { case insert(...), delete(...), skip(...) }
+public struct DeterministicParseResult<Trace> {
+    public let status: ParseStatus
+    public let tree: ParseTree?
+    public let diagnostics: [ParseDiagnostic]
+    public let recoveryEdits: [RecoveryEdit]
+    public let trace: [Trace]
+}
+```
+
+`NoParseTrace` and `UntracedParseResult` cover parsers such as LL that do not expose execution traces. LR specializes the generic result with its own trace event. `DiagnosticReporter` renders any shared diagnostic batch with one-based line/column information and source underlines. Recovery policies are intentionally not shared: FIRST/FOLLOW synchronization in LL and ACTION-table repair in LR make different decisions even though they return the same result vocabulary.
 
 ## Graphviz output
 
