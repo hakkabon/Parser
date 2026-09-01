@@ -57,8 +57,11 @@ Three things in that pipeline are generic and fully provided by this module: the
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/hakkabon/Grammar.git", branch: "main"),
-    .package(url: "https://github.com/hakkabon/Parser.git", branch: "main"),
+    .package(
+        url: "https://github.com/hakkabon/Grammar.git",
+        revision: "69f85d7a493e1862412c34493e3656e94331df06"
+    ),
+    .package(url: "https://github.com/hakkabon/Parser.git", from: "0.1.0"),
 ],
 targets: [
     .target(
