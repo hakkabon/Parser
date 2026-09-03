@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import OSLog
 
 public class SPPFGraph<Label: Hashable & Codable & CustomStringConvertible> {
     private var graph: [SPPFNode<Label>: Set<SPPFNode<Label>>] = [:]
@@ -51,14 +50,14 @@ public class SPPFGraph<Label: Hashable & Codable & CustomStringConvertible> {
     }
     
     public func printGraph() {
-        Logger.sppf.trace("SPPF Graph: \n")
+        ParserDiagnostics.traceSPPF("SPPF Graph: \n")
 
         let nodes = graph.keys.sorted()
         for node in nodes {
-            Logger.sppf.trace("  \(node.description)")
+            ParserDiagnostics.traceSPPF("  \(node.description)")
             let chidren = graph[node]!
             for child in chidren {
-                Logger.sppf.trace("    -> \(child.description)")
+                ParserDiagnostics.traceSPPF("    -> \(child.description)")
             }
         }
     }
@@ -113,4 +112,3 @@ public class SPPFGraph<Label: Hashable & Codable & CustomStringConvertible> {
         self.graph = newGraph
     }
 }
-

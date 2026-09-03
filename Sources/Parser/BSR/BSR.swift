@@ -8,7 +8,6 @@
 
 import Foundation
 import Grammar
-import OSLog
 
 /// Binary Subtree Representation (BSR).
 /// - Derivation representation using binary subtree sets, E. Scott et al.
@@ -68,11 +67,11 @@ extension BSR: Equatable {
 
 extension Set {
     public func log() where Element: CustomStringConvertible {
-        Logger.bsr.trace("Binary Subtree Representation \n")
+        ParserDiagnostics.traceBSR("Binary Subtree Representation \n")
         
         let sortedElements = self.sorted { "\($0)" < "\($1)" }
         for entry in sortedElements {
-            Logger.bsr.trace("  \(entry.description)")
+            ParserDiagnostics.traceBSR("  \(entry.description)")
         }
     }
 }

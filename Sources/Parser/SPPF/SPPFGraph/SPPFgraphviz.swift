@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import OSLog
 
 public extension SPPFGraph where Label: SPPFLabel {
     
