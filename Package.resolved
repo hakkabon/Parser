@@ -5,7 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hakkabon/Grammar.git",
       "state" : {
-        "revision" : "69f85d7a493e1862412c34493e3656e94331df06"
+        "revision" : "3816f5c668a98b29022a19757a40cb956b269f7e",
+        "version" : "0.2.0"
       }
     },
     {
@@ -13,7 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hakkabon/GrammarDiagram.git",
       "state" : {
-        "revision" : "dc17ab061a1614ba0692be06aa69043b45bbbcd4"
+        "revision" : "dc17ab061a1614ba0692be06aa69043b45bbbcd4",
+        "version" : "0.1.0"
       }
     },
     {
@@ -21,7 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hakkabon/GrammarTokenizer.git",
       "state" : {
-        "revision" : "880af85a1f5809866f9656405c801fd04bcb4df9"
+        "revision" : "71a0bf3fa9f2bfe3399ba10ffd2b33eb4826c989",
+        "version" : "0.1.0"
       }
     },
     {
@@ -47,7 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hakkabon/TerminalColors.git",
       "state" : {
-        "revision" : "d1ef429802e808ecdde4674221d892ae6d9f2215"
+        "revision" : "7e2d921425320e72822cbf5b8d17126b73655908",
+        "version" : "0.1.0"
       }
     }
   ],
