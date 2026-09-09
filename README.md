@@ -10,6 +10,7 @@ If you're writing a new parser for the `hakkabon` grammar toolkit — Earley, CY
 
 - [Mental model](#mental-model)
 - [Adding this package as a dependency](#adding-this-package-as-a-dependency)
+- [Portable parser contract](#portable-parser-contract)
 - [The one thing you write: `SPPFLabel`](#the-one-thing-you-write-sppflabel)
 - [`BSR<Label>`](#bsrlabel)
 - [`SPPFNode<Label>` and `SPPFGraph<Label>`](#sppfnodelabel-and-sppfgraphlabel)
@@ -57,11 +58,8 @@ Three things in that pipeline are generic and fully provided by this module: the
 ```swift
 // Package.swift
 dependencies: [
-    .package(
-        url: "https://github.com/hakkabon/Grammar.git",
-        revision: "69f85d7a493e1862412c34493e3656e94331df06"
-    ),
-    .package(url: "https://github.com/hakkabon/Parser.git", from: "0.1.0"),
+    .package(url: "https://github.com/hakkabon/Grammar.git", .upToNextMinor(from: "0.3.0")),
+    .package(url: "https://github.com/hakkabon/Parser.git", .upToNextMinor(from: "0.3.0")),
 ],
 targets: [
     .target(
@@ -75,6 +73,12 @@ targets: [
 ```
 
 `Parser` depends on `Grammar` (for `NonTerminal`, `Symbol`, `Terminal`) and `TerminalColors` (for the pretty-printed `SyntaxTree.description`). It does not depend on `Lexer` or `GrammarTokenizer` — tokenization is entirely your parser's concern; this module only ever sees token *indices* and `Range<String.Index>` values you hand it.
+
+## Portable parser contract
+
+Parser 0.3 also provides a versioned, engine-neutral result for conformance tests, engine comparison, forest exploration, and semantic replay. It preserves Grammar's stable production identities while keeping LR states, Earley chart entries, and other algorithm internals in their owning packages.
+
+See [ParserContract.md](ParserContract.md) for the adoption API and [Schemas/ParseContract.schema.json](Schemas/ParseContract.schema.json) for the serialized version 1 contract.
 
 ## The one thing you write: `SPPFLabel`
 
@@ -96,7 +100,7 @@ Every algorithm-specific piece of this module (`SPPFNode<Label>`, `SPPFGraph<Lab
 
 Three real implementations exist today, and they show the range of what a conforming type can look like:
 
-**`NodeLabel`** — shipped *inside this module* (`SPPF/SPPFGraph/NodeLabel.swift`), ready to use as-is. It's the literal `(goal, symbols, position)` triple with nothing added, used directly by `Earley-Parser` and `Earley-TableParser`. If your algorithm doesn't already have its own natural "dotted production" type, start here — you may not need to write a `Label` type at all.
+**`NodeLabel`** — a literal `(goal, symbols, position)` triple used by the Earley packages. It is a small engine-owned type rather than part of Parser's public contract.
 
 ```swift
 public struct NodeLabel: Codable, SPPFLabel {
@@ -133,7 +137,7 @@ public enum CNFRule: Hashable, Codable, CustomStringConvertible, SPPFLabel {
 }
 ```
 
-Pick whichever shape fits: reuse `NodeLabel`, adapt an existing item/slot type, or write a small purpose-built enum. The only hard requirement is that `symbols` is always the **full** right-hand side (never a truncated prefix) and `position` is the dot *within that full array* — see [Design notes](#design-notes-and-known-gotchas) for what goes wrong if you truncate.
+Pick whichever shape fits: adapt an existing item/slot type or write a small purpose-built type. The only hard requirement is that `symbols` is always the **full** right-hand side (never a truncated prefix) and `position` is the dot *within that full array* — see [Design notes](#design-notes-and-known-gotchas) for what goes wrong if you truncate.
 
 ## `BSR<Label>`
 
@@ -349,19 +353,17 @@ Neither one writes a file or shells out to `dot` by itself — that's left to ea
 ## Logging and debugging
 
 ```swift
-extension Logger {
-    public static let bsr:  Logger   // subsystem "com.hakkabon.Parser", category "BSR"
-    public static let sppf: Logger   // subsystem "com.hakkabon.Parser", category "SPPF"
-}
+bsrSet.log()
+sppfGraph.printGraph()
 ```
 
-Two `OSLog` categories, used by `Set<BSR<Label>>.log()` (`Logger.bsr.trace`) and `SPPFGraph.printGraph()` (`Logger.sppf.trace`). Note that `AnalyzeSPPF.swift`'s `SPPFGraph.log()` is a *different*, plain-`print`-based debug dump (not `OSLog`) — a holdover from before `printGraph()` existed on `SPPFGraph` itself, kept because it does more: alongside listing every node and its children, it flags nodes with more than five children ("potential explosion") and does a depth-first cycle check from every `.symbol` root, printing a warning if it finds one. Reach for `.log()` when you suspect something structural is wrong with a graph you just built; reach for `.printGraph()` or `.graphviz` for a quick, low-ceremony look.
+These calls use `OSLog` where available and become quiet on platforms without it. `AnalyzeSPPF.swift`'s `SPPFGraph.log()` is a separate `print`-based structural dump: it also flags unusually broad nodes and checks symbol roots for cycles.
 
 ## Wiring up a new parser: step by step
 
 This is the sequence `CYK-Parser`, `RNGLR-Parser`, and `Earley-Parser` all followed (in that order, chronologically) to align to this module. If you're bringing up a fourth algorithm — GLR, LL, LR, whatever's next in the toolkit — this is the path of least resistance:
 
-1. **Pick or write your `Label` type** and conform it to `SPPFLabel`. If your algorithm already has a natural "dotted production" or "grammar slot" type, add the three computed properties (see the three examples above). If not, just use this module's own `NodeLabel` directly — you may not need a type of your own at all.
+1. **Pick or write your `Label` type** and conform it to `SPPFLabel`. If your algorithm already has a natural "dotted production" or "grammar slot" type, add the three computed properties (see the examples above). Otherwise, a small `(goal, symbols, position)` value is enough. Add `ProductionIdentifiedSPPFLabel` when the engine adopts the portable contract.
 2. **Write the BSR-emitting half of your algorithm** — wherever your algorithm currently recognizes "this production/slot is now complete" or "this partial match now spans further," emit a `BSR<Label>(label:leftExtent:pivot:rightExtent:)`. Remember the single-symbol pivot convention above.
 3. **Write the BSR → SPPF construction.** This is the one piece of real algorithm-specific work — walk your `Set<BSR<Label>>` (or your chart/GSS directly, if that's more natural) and build an `SPPFGraph<Label>`, following the [packed-node child convention](#the-packed-node-child-convention-read-this-before-you-build-an-sppf) exactly. `Earley-Parser`'s `BSR/ExtractSPPF.swift` is the cleanest reference implementation to copy from — it's the original this module's algorithms were extracted from, and its comments walk through each of the three `α.count` cases explicitly.
 4. **Conform your parser type to `DeterministicParser`/`GeneralizedParser`.** `syntaxTree(for:)`/`allSyntaxTrees(for:)` become thin wrappers: parse, check `result.isSuccessful`, and if so call `result.sppfGraph!.buildParseTree(startSymbol:ranges:string:)` / `buildAllParseTrees(...)`. This is usually under 30 lines total.
@@ -375,7 +377,7 @@ This is the sequence `CYK-Parser`, `RNGLR-Parser`, and `Earley-Parser` all follo
 - **`BSR<Label>.pivot` is sometimes a best-effort placeholder, and that's fine.** Nothing in this module reads `BSR.pivot` back — it exists for diagnostics (`ParseResult.bsr`, `gtool`'s SPPF analysis output) and for algorithms whose own bookkeeping naturally produces a real split point at BSR-recording time (Earley's chart-based `bsrAdd`, which processes one symbol at a time and always has a genuine `k` on hand). RNGLR's BSR set, by contrast, records a full-width completed production before it's later binarised — a single scalar `pivot` can't faithfully represent "this production may bind to several different internal split points once its SPPF is built," so `RNGLR-Parser` documents `pivot = leftExtent` there as a known placeholder. If you hit the same shape of algorithm, do the same: pick something documented and harmless, and don't let real construction logic depend on it.
 - **`getChildren(of:)` is unordered.** If you're porting an algorithm whose old SPPF representation stored children as an ordered array and relied on that order anywhere outside of display/debugging, that assumption needs to go — verify against extents and symbol identity instead, the way `CSTEnumeration._expandPackedNode` does.
 - **Comparable is opt-in and rarely available.** `BSR<Label>` and `SPPFNode<Label>` are only `Comparable` when `Label: Comparable`; none of the three current `Label` types are. Reach for `.sorted(by: { $0.description < $1.description })` rather than bare `.sorted()` when you need deterministic output from a `Set` of either.
-- **This module has no error type of its own, on purpose.** `ParseError`/`SyntaxError`-style types stay local to each concrete parser package. What's genuinely shared is the data structures and the tree-extraction algorithm; what counts as a good parse-failure diagnostic is inherently specific to each parser's front end.
+- **Thrown parser errors remain engine-owned.** Parser shares portable diagnostics and contract-validation errors, while concrete `ParseError`/`SyntaxError` types stay in their parser packages.
 
 ## Who uses this today
 
@@ -383,5 +385,5 @@ This is the sequence `CYK-Parser`, `RNGLR-Parser`, and `Earley-Parser` all follo
 |---|---|---|
 | `CYK-Parser` | `CNFRule` | Chomsky Normal Form — `position` is always `symbols.count` |
 | `RNGLR-Parser` | `GrammarSlot` | reuses its existing LR-item type; keeps its own richer `SPPFGraphviz.swift` |
-| `Earley-Parser` | `NodeLabel` | this module's own `NodeLabel`, used directly — the original source this module was extracted from |
+| `Earley-Parser` | `NodeLabel` | engine-owned label; the original source this module was extracted from |
 | `Earley-TableParser` | `NodeLabel` | data model aligned to this module; not yet wired up to `DeterministicParser`/`GeneralizedParser` (no facade type exists yet — see that package's own notes) |

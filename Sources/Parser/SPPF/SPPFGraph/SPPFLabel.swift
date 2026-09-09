@@ -17,3 +17,12 @@ public protocol SPPFLabel: Hashable, CustomStringConvertible {
     /// The current dot position within the right-hand side symbols.
     var position: Int { get }
 }
+
+/// An SPPF label that retains the normalized Grammar production identity.
+///
+/// Existing engines may continue to conform only to ``SPPFLabel``. Engines
+/// adopt this refinement when they are ready to export portable forest
+/// snapshots and production-identified syntax trees.
+public protocol ProductionIdentifiedSPPFLabel: SPPFLabel {
+    var productionID: GrammarProductionID { get }
+}

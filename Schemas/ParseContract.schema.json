@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hakkabon.github.io/Parser/schemas/parse-contract-v1.json",
+  "title": "Portable parser contract snapshot",
+  "$ref": "#/$defs/contract",
+  "$defs": {
+    "nonemptyString": { "type": "string", "minLength": 1 },
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["leftToken", "rightToken", "lowerUTF16Offset", "upperUTF16Offset"],
+      "properties": {
+        "leftToken": { "type": "integer", "minimum": 0 },
+        "rightToken": { "type": "integer", "minimum": 0 },
+        "lowerUTF16Offset": { "type": "integer", "minimum": 0 },
+        "upperUTF16Offset": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "tree": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "label", "span"],
+          "properties": {
+            "kind": { "const": "token" },
+            "label": { "type": "string" },
+            "span": { "$ref": "#/$defs/span" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "nonterminal", "productionID", "span", "children"],
+          "properties": {
+            "kind": { "const": "production" },
+            "nonterminal": { "$ref": "#/$defs/nonemptyString" },
+            "productionID": { "$ref": "#/$defs/nonemptyString" },
+            "span": { "$ref": "#/$defs/span" },
+            "children": { "type": "array", "items": { "$ref": "#/$defs/tree" } }
+          }
+        }
+      ]
+    },
+    "forestNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "leftExtent", "rightExtent"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nonemptyString" },
+        "kind": { "enum": ["token", "symbol", "intermediate", "packed"] },
+        "label": { "type": "string" },
+        "productionID": { "$ref": "#/$defs/nonemptyString" },
+        "position": { "type": "integer", "minimum": 0 },
+        "leftExtent": { "type": "integer", "minimum": 0 },
+        "rightExtent": { "type": "integer", "minimum": 0 },
+        "pivot": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "forestEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent", "child"],
+      "properties": {
+        "parent": { "$ref": "#/$defs/nonemptyString" },
+        "child": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
+    "forest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "nodes", "edges", "roots", "ambiguityNodes"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/forestNode" } },
+        "edges": { "type": "array", "items": { "$ref": "#/$defs/forestEdge" } },
+        "roots": { "type": "array", "items": { "$ref": "#/$defs/nonemptyString" } },
+        "ambiguityNodes": { "type": "array", "items": { "$ref": "#/$defs/nonemptyString" } }
+      }
+    },
+    "terminal": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": { "kind": { "const": "literal" }, "value": { "type": "string" } }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "values"],
+          "properties": {
+            "kind": { "const": "literals" },
+            "values": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "lower", "upper"],
+          "properties": {
+            "kind": { "const": "characterRange" },
+            "lower": { "type": "string", "minLength": 1 },
+            "upper": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "pattern"],
+          "properties": {
+            "kind": { "const": "regularExpression" }, "pattern": { "type": "string" }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "value"],
+          "properties": { "kind": { "const": "boundary" }, "value": { "type": "string" } }
+        }
+      ]
+    },
+    "diagnosticRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lowerUTF16Offset", "upperUTF16Offset", "line", "column"],
+      "properties": {
+        "lowerUTF16Offset": { "type": "integer", "minimum": 0 },
+        "upperUTF16Offset": { "type": "integer", "minimum": 0 },
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severity", "reason", "message", "context", "expected"],
+      "properties": {
+        "severity": { "enum": ["error", "warning"] },
+        "reason": {
+          "enum": ["missingToken", "extraToken", "noViableAlternative", "invalidToken", "prematureEndOfInput", "emptyNotAllowed", "unknownToken", "unmatchedPattern", "unexpectedToken", "grammarConflict", "internalError"]
+        },
+        "message": { "type": "string" },
+        "range": { "$ref": "#/$defs/diagnosticRange" },
+        "context": { "type": "array", "items": { "type": "string" } },
+        "expected": { "type": "array", "items": { "$ref": "#/$defs/terminal" } },
+        "found": { "$ref": "#/$defs/terminal" },
+        "productionID": { "$ref": "#/$defs/nonemptyString" },
+        "tokenIndex": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "recoveryEdit": {
+      "oneOf": [
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "terminal", "atToken"],
+          "properties": {
+            "kind": { "enum": ["insert", "delete"] },
+            "terminal": { "$ref": "#/$defs/terminal" },
+            "atToken": { "type": "integer", "minimum": 0 }
+          }
+        },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["kind", "terminals", "fromToken"],
+          "properties": {
+            "kind": { "const": "skip" },
+            "terminals": { "type": "array", "items": { "$ref": "#/$defs/terminal" } },
+            "fromToken": { "type": "integer", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "replayEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "kind"],
+      "properties": {
+        "step": { "type": "integer", "minimum": 0 },
+        "kind": { "enum": ["start", "inspect", "consume", "applyProduction", "discoverAmbiguity", "recover", "accept", "reject"] },
+        "tokenIndex": { "type": "integer", "minimum": 0 },
+        "productionID": { "$ref": "#/$defs/nonemptyString" },
+        "forestNodeID": { "$ref": "#/$defs/nonemptyString" },
+        "diagnosticReason": {
+          "enum": ["missingToken", "extraToken", "noViableAlternative", "invalidToken", "prematureEndOfInput", "emptyNotAllowed", "unknownToken", "unmatchedPattern", "unexpectedToken", "grammarConflict", "internalError"]
+        }
+      }
+    },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "displayName", "algorithm"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/nonemptyString" },
+        "displayName": { "$ref": "#/$defs/nonemptyString" },
+        "algorithm": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "engine", "status", "diagnostics", "recoveryEdits", "replay"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "engine": { "$ref": "#/$defs/engine" },
+        "status": { "enum": ["accepted", "recovered", "rejected"] },
+        "tree": { "$ref": "#/$defs/tree" },
+        "forest": { "$ref": "#/$defs/forest" },
+        "diagnostics": { "type": "array", "items": { "$ref": "#/$defs/diagnostic" } },
+        "recoveryEdits": { "type": "array", "items": { "$ref": "#/$defs/recoveryEdit" } },
+        "replay": { "type": "array", "items": { "$ref": "#/$defs/replayEvent" } }
+      }
+    }
+  }
+}

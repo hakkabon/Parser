@@ -4,12 +4,12 @@ import Grammar
 /// A parser-independent description of a problem found while tokenizing,
 /// parsing, or recovering an input document.
 public struct ParseDiagnostic: Error, CustomStringConvertible {
-    public enum Severity: String, Sendable, Equatable {
+    public enum Severity: String, Sendable, Hashable, Codable {
         case warning
         case error
     }
 
-    public enum Reason: String, Sendable, Equatable {
+    public enum Reason: String, Sendable, Hashable, Codable {
         case missingToken
         case extraToken
         case noViableAlternative
@@ -35,6 +35,12 @@ public struct ParseDiagnostic: Error, CustomStringConvertible {
     /// An algorithm-specific numeric state, such as an LR automaton state.
     public let parserState: Int?
 
+    /// Stable grammar production associated with this diagnostic, when known.
+    public let productionID: GrammarProductionID?
+
+    /// Zero-based token position associated with this diagnostic, when known.
+    public let tokenIndex: Int?
+
     public let line: Int
     public let column: Int
 
@@ -47,6 +53,8 @@ public struct ParseDiagnostic: Error, CustomStringConvertible {
         expected: [Terminal] = [],
         found: Terminal? = nil,
         parserState: Int? = nil,
+        productionID: GrammarProductionID? = nil,
+        tokenIndex: Int? = nil,
         source: String
     ) {
         self.severity = severity
@@ -58,6 +66,8 @@ public struct ParseDiagnostic: Error, CustomStringConvertible {
         self.expected = expected.sorted { $0.description < $1.description }
         self.found = found
         self.parserState = parserState
+        self.productionID = productionID
+        self.tokenIndex = tokenIndex
         (line, column) = source.parseLineAndColumn(at: range?.lowerBound ?? source.endIndex)
     }
 

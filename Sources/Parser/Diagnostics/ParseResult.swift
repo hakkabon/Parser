@@ -2,7 +2,7 @@ import Grammar
 
 /// Whether parsing completed without repairs, completed after recovery, or
 /// could not produce a complete parse.
-public enum ParseStatus: String, Sendable, Equatable {
+public enum ParseStatus: String, Sendable, Hashable, Codable {
     case accepted
     case recovered
     case rejected
