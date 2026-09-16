@@ -80,6 +80,10 @@ Parser 0.3 also provides a versioned, engine-neutral result for conformance test
 
 See [ParserContract.md](ParserContract.md) for the adoption API and [Schemas/ParseContract.schema.json](Schemas/ParseContract.schema.json) for the serialized version 1 contract.
 
+Parser 0.3.1 also publishes executable tree, forest, replay, and metamorphic
+observation laws plus a fingerprinted discrepancy artifact. See
+[Executable parser laws](ExecutableParserLaws.md).
+
 ## The one thing you write: `SPPFLabel`
 
 ```swift

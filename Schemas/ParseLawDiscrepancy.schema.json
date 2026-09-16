@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hakkabon.github.io/Parser/schemas/parse-law-discrepancy-v1.json",
+  "title": "Executable parser law discrepancy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "kind", "witness", "input", "tokenCount", "baseline",
+    "candidate", "evaluation", "fingerprintAlgorithm", "fingerprint"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "parser-law-discrepancy" },
+    "witness": { "$ref": "https://hakkabon.github.io/Grammar/schemas/executable-grammar-law-v1.json" },
+    "input": { "type": "string" },
+    "tokenCount": { "type": "integer", "minimum": 0 },
+    "baseline": { "$ref": "ParseContract.schema.json" },
+    "candidate": { "$ref": "ParseContract.schema.json" },
+    "evaluation": { "type": "object" },
+    "fingerprintAlgorithm": { "const": "fnv1a64" },
+    "fingerprint": { "type": "string", "pattern": "^[0-9a-f]{16}$" }
+  }
+}

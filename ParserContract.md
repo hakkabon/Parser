@@ -59,3 +59,6 @@ Both the top-level contract and nested forest declare schema version 1 and rejec
 - Grammar-REPL and Workbench own comparison, exploration, persistence, and rendering.
 
 Graphviz text and other presentation formats are not part of the portable contract. They remain useful diagnostics, but consumers should build durable tooling from `ParseForestSnapshot` and `ProductionParseTree`.
+
+The contract's structural invariants and Grammar-owned metamorphic relations
+are executable through [Executable parser laws](ExecutableParserLaws.md).
