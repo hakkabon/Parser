@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hakkabon/Grammar.git",
       "state" : {
-        "revision" : "07fe749d6d5d85c0d11648634d3ad458d4d0abe4",
-        "version" : "0.3.1"
+        "revision" : "2dedc076be2e0a2bdb4bad843c717d4fd3d8bfdc",
+        "version" : "0.3.4"
       }
     },
     {

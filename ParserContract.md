@@ -62,3 +62,8 @@ Graphviz text and other presentation formats are not part of the portable contra
 
 The contract's structural invariants and Grammar-owned metamorphic relations
 are executable through [Executable parser laws](ExecutableParserLaws.md).
+
+Bounded execution, capability negotiation, termination disposition, measured
+counters, and Grammar normalization provenance are deliberately carried by the
+separate [parser operational contract](ParserOperationalContract.md). This keeps
+semantic parse equivalence independent from resource and algorithm evidence.

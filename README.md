@@ -11,6 +11,7 @@ If you're writing a new parser for the `hakkabon` grammar toolkit — Earley, CY
 - [Mental model](#mental-model)
 - [Adding this package as a dependency](#adding-this-package-as-a-dependency)
 - [Portable parser contract](#portable-parser-contract)
+- [Parser operational contract](#parser-operational-contract)
 - [The one thing you write: `SPPFLabel`](#the-one-thing-you-write-sppflabel)
 - [`BSR<Label>`](#bsrlabel)
 - [`SPPFNode<Label>` and `SPPFGraph<Label>`](#sppfnodelabel-and-sppfgraphlabel)
@@ -58,8 +59,8 @@ Three things in that pipeline are generic and fully provided by this module: the
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/hakkabon/Grammar.git", .upToNextMinor(from: "0.3.0")),
-    .package(url: "https://github.com/hakkabon/Parser.git", .upToNextMinor(from: "0.3.0")),
+    .package(url: "https://github.com/hakkabon/Grammar.git", .upToNextMinor(from: "0.3.4")),
+    .package(url: "https://github.com/hakkabon/Parser.git", .upToNextMinor(from: "0.4.0")),
 ],
 targets: [
     .target(
@@ -77,6 +78,16 @@ targets: [
 ## Portable parser contract
 
 Parser 0.3 also provides a versioned, engine-neutral result for conformance tests, engine comparison, forest exploration, and semantic replay. It preserves Grammar's stable production identities while keeping LR states, Earley chart entries, and other algorithm internals in their owning packages.
+
+## Parser operational contract
+
+Parser 0.4 adds `ParseOperationalSnapshot`, complementing the semantic result
+with truthful engine
+capabilities, requested and reached limits, measured counters, and distinct
+completed, unsupported, limited, cancelled, and failed dispositions. It can
+carry Grammar 0.3.4 normalization provenance and verifies runtime production
+identities against the normalized grammar. See
+[ParserOperationalContract.md](ParserOperationalContract.md).
 
 See [ParserContract.md](ParserContract.md) for the adoption API and [Schemas/ParseContract.schema.json](Schemas/ParseContract.schema.json) for the serialized version 1 contract.
 

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hakkabon.github.io/Parser/schemas/parser-operational-contract-v1.json",
+  "title": "Portable parser operational snapshot",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "engine", "capabilities", "disposition", "limits", "measurements", "reachedLimits"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "engine": { "$ref": "#/$defs/engine" },
+    "capabilities": { "$ref": "#/$defs/capabilities" },
+    "disposition": { "enum": ["completed", "unsupported", "limited", "cancelled", "failed"] },
+    "result": { "$ref": "ParseContract.schema.json" },
+    "normalization": { "$ref": "https://hakkabon.github.io/Grammar/schemas/normalization-report-v1.json" },
+    "limits": { "type": "array", "items": { "$ref": "#/$defs/limitValue" } },
+    "measurements": { "type": "array", "items": { "$ref": "#/$defs/measurementValue" } },
+    "reachedLimits": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/counter" } },
+    "message": { "type": "string" }
+  },
+  "$defs": {
+    "nonemptyString": { "type": "string", "minLength": 1 },
+    "engine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "displayName", "algorithm"],
+      "properties": {
+        "identity": { "$ref": "#/$defs/nonemptyString" },
+        "displayName": { "$ref": "#/$defs/nonemptyString" },
+        "algorithm": { "$ref": "#/$defs/nonemptyString" }
+      }
+    },
+    "feature": {
+      "enum": ["productionTree", "packedForest", "ambiguityEvidence", "replay", "recovery", "cancellation", "normalizationProvenance"]
+    },
+    "counter": {
+      "enum": ["inputTokens", "workItems", "chartItems", "configurations", "peakConfigurations", "forestNodes", "packedFamilies", "concreteTrees", "replayEvents", "diagnostics", "recoveryEdits", "ambiguitySites"]
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["features", "reportedCounters", "limitableCounters", "normalizationTargets"],
+      "properties": {
+        "features": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/feature" } },
+        "reportedCounters": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/counter" } },
+        "limitableCounters": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/counter" } },
+        "normalizationTargets": { "type": "array", "uniqueItems": true, "items": { "enum": ["none", "standard", "chomsky", "greibach"] } }
+      }
+    },
+    "limitValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["counter", "value"],
+      "properties": {
+        "counter": { "$ref": "#/$defs/counter" },
+        "value": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "measurementValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["counter", "value"],
+      "properties": {
+        "counter": { "$ref": "#/$defs/counter" },
+        "value": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}
