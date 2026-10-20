@@ -12,6 +12,7 @@ If you're writing a new parser for the `hakkabon` grammar toolkit — Earley, CY
 - [Adding this package as a dependency](#adding-this-package-as-a-dependency)
 - [Portable parser contract](#portable-parser-contract)
 - [Parser operational contract](#parser-operational-contract)
+- [Engine-owned microbenchmarks](#engine-owned-microbenchmarks)
 - [The one thing you write: `SPPFLabel`](#the-one-thing-you-write-sppflabel)
 - [`BSR<Label>`](#bsrlabel)
 - [`SPPFNode<Label>` and `SPPFGraph<Label>`](#sppfnodelabel-and-sppfgraphlabel)
@@ -60,7 +61,7 @@ Three things in that pipeline are generic and fully provided by this module: the
 // Package.swift
 dependencies: [
     .package(url: "https://github.com/hakkabon/Grammar.git", .upToNextMinor(from: "0.3.4")),
-    .package(url: "https://github.com/hakkabon/Parser.git", .upToNextMinor(from: "0.4.0")),
+    .package(url: "https://github.com/hakkabon/Parser.git", .upToNextMinor(from: "0.4.1")),
 ],
 targets: [
     .target(
@@ -94,6 +95,19 @@ See [ParserContract.md](ParserContract.md) for the adoption API and [Schemas/Par
 Parser 0.3.1 also publishes executable tree, forest, replay, and metamorphic
 observation laws plus a fingerprinted discrepancy artifact. See
 [Executable parser laws](ExecutableParserLaws.md).
+
+## Engine-owned microbenchmarks
+
+Parser 0.4.1 publishes the schema-1 `ParserEngineMicrobenchmarkSuite` and
+`ParserEngineMicrobenchmarkReport` envelope plus a fail-closed runner. The
+runner retains every raw duration, rejects correctness evidence that changes
+between warmup or measured iterations, and emits longitudinal ratios only when
+the suite fingerprint, host environment, and evidence match exactly.
+
+Parser does not define workloads. LL, Earley, Earley Table, CYK, RNGLR, and LR
+each own their grammar, input, scale, measured boundary, counters, and
+executable. The public JSON contract is in
+`Schemas/EngineMicrobenchmarkReport.schema.json`.
 
 ## The one thing you write: `SPPFLabel`
 
