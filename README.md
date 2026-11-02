@@ -346,6 +346,11 @@ A few conventions worth calling out, since they're conventions rather than anyth
 
 Recovering deterministic parsers share data and presentation while retaining their own recovery algorithms:
 
+`ParseRecoveryEdit.incrementalAction` bridges the portable token-coordinate
+script to IncrementalParsing's source-coordinate repair algebra when a lexer or
+language kit supplies stable token IDs and UTF-16 ranges. Parser still does not
+own token identity or the repair-search algorithm.
+
 ```swift
 public struct ParseDiagnostic: Error { /* source range, reason, message,
                                           expected/found terminals, context */ }

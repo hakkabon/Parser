@@ -15,6 +15,7 @@ let package = Package(
             .upToNextMinor(from: "0.3.4")
         ),
         .package(url: "https://github.com/hakkabon/TerminalColors.git", .upToNextMinor(from: "0.1.0")),
+        .package(path: "../Incremental-Parsing"),
     ],
     targets: [
         .target(
@@ -22,12 +23,14 @@ let package = Package(
             dependencies: [
                 .product(name: "Grammar", package: "Grammar"),
                 .product(name: "TerminalColors", package: "TerminalColors"),
+                .product(name: "IncrementalParsing", package: "Incremental-Parsing"),
             ]
         ),
         .testTarget(
             name: "ParserTests",
             dependencies: [
                 "Parser",
+                .product(name: "IncrementalParsing", package: "Incremental-Parsing"),
             ]
         ),
     ]

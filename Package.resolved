@@ -1,15 +1,6 @@
 {
   "pins" : [
     {
-      "identity" : "grammar",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/hakkabon/Grammar.git",
-      "state" : {
-        "revision" : "2dedc076be2e0a2bdb4bad843c717d4fd3d8bfdc",
-        "version" : "0.3.4"
-      }
-    },
-    {
       "identity" : "grammardiagram",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hakkabon/GrammarDiagram.git",
