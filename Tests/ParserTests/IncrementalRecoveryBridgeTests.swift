@@ -38,4 +38,68 @@ final class IncrementalRecoveryBridgeTests: XCTestCase {
         XCTAssertEqual(ids, ["a", "b"])
         XCTAssertEqual(range, SourceRange(0, 3))
     }
+
+    func testResultProjectsACompleteDiagnosticLinkedRecoveryPlan() throws {
+        let source = "a b"
+        let diagnostic = ParseDiagnostic(
+            reason: .extraToken,
+            message: "unexpected b",
+            range: source.index(source.startIndex, offsetBy: 2)..<source.endIndex,
+            expected: [.string(string: ";")],
+            found: .string(string: "b"),
+            tokenIndex: 1,
+            source: source)
+        let result = UntracedParseResult(
+            status: .recovered,
+            tree: nil,
+            diagnostics: [diagnostic],
+            recoveryEdits: [.delete(terminal: .string(string: "b"), atToken: 1)])
+
+        let plan = try result.incrementalRecoveryPlan(
+            tokens: tokens, endOfInputOffset: 3)
+
+        XCTAssertEqual(plan.totalCost, 1)
+        XCTAssertEqual(plan.maximumCost, 1)
+        XCTAssertEqual(plan.steps.count, 1)
+        XCTAssertEqual(plan.steps[0].expected, [terminal])
+        XCTAssertEqual(plan.steps[0].diagnosticID, "parser.diagnostic.0")
+        let expectedAction: RecoveryAction<GrammarNormalizedTerminal, String> =
+            .delete("b", range: SourceRange(2, 3))
+        XCTAssertEqual(plan.steps[0].action, expectedAction)
+    }
+
+    func testSkipCostReflectsNumberOfDiscardedTokens() throws {
+        let result = UntracedParseResult(
+            status: .recovered,
+            tree: nil,
+            recoveryEdits: [.skip(
+                terminals: [.string(string: "a"), .string(string: "b")],
+                fromToken: 0)])
+
+        let plan = try result.incrementalRecoveryPlan(
+            tokens: tokens, endOfInputOffset: 3)
+        XCTAssertEqual(plan.steps[0].cost, 2)
+        XCTAssertEqual(plan.totalCost, 2)
+        XCTAssertThrowsError(try result.incrementalRecoveryPlan(
+            tokens: tokens, endOfInputOffset: 3, maximumCost: 1)) {
+            XCTAssertEqual(
+                $0 as? RecoveryPlanError,
+                .budgetExceeded(cost: 2, maximum: 1))
+        }
+    }
+
+    func testMalformedStableTokenEvidenceIsRejected() throws {
+        let duplicate = [tokens[0], tokens[0]]
+        XCTAssertThrowsError(try ParseRecoveryEdit.insert(
+            terminal: terminal, atToken: 0
+        ).incrementalAction(tokens: duplicate, endOfInputOffset: 3)) {
+            XCTAssertEqual($0 as? ParseRecoveryBridgeError, .duplicateTokenIndex(0))
+        }
+
+        XCTAssertThrowsError(try ParseRecoveryEdit.insert(
+            terminal: terminal, atToken: 4
+        ).incrementalAction(tokens: tokens, endOfInputOffset: 3)) {
+            XCTAssertEqual($0 as? ParseRecoveryBridgeError, .invalidInsertionIndex(4))
+        }
+    }
 }
