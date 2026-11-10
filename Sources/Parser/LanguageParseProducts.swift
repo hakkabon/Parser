@@ -184,30 +184,8 @@ where TokenKind: RawRepresentable & Hashable & Sendable,
     }
 }
 
-public struct LanguageParseDiagnostic<TokenKind>: Sendable, Equatable, Identifiable
-where TokenKind: Hashable & Sendable {
-    public let id: String
-    public let severity: IncrementalParsing.DiagnosticSeverity
-    public let message: String
-    public let range: SourceRange
-    public let expected: [TokenKind]
-
-    public init(severity: IncrementalParsing.DiagnosticSeverity, message: String,
-                range: SourceRange, expected: [TokenKind] = []) {
-        id = "\(range.location):\(range.length):\(message)"
-        self.severity = severity
-        self.message = message
-        self.range = range
-        self.expected = expected
-    }
-
-    public func relocated(by delta: Int) -> Self {
-        Self(severity: severity, message: message,
-             range: SourceRange(location: range.location + delta,
-                                length: range.length),
-             expected: expected)
-    }
-}
+public typealias LanguageParseDiagnostic<TokenKind: Hashable & Sendable> =
+    IncrementalParsing.ParseDiagnostic<TokenKind>
 
 public enum LanguageRecoveryAction<TokenKind, Token>: Sendable
 where TokenKind: Hashable & Sendable, Token: Equatable & Sendable {
@@ -216,6 +194,22 @@ where TokenKind: Hashable & Sendable, Token: Equatable & Sendable {
 }
 
 extension LanguageRecoveryAction: Equatable {}
+
+public extension LanguageRecoveryAction where Token: ConcreteSyntaxToken,
+    Token.Kind == TokenKind {
+    /// Canonical parser-neutral repair used by providers, measurements, and
+    /// serialized contracts. Engine and cache layers may retain the richer
+    /// token value until they cross this boundary.
+    var incrementalRecoveryAction:
+        IncrementalParsing.RecoveryAction<TokenKind, Token.Identity> {
+        switch self {
+        case let .insert(kind, offset):
+            .insert(kind, at: offset)
+        case let .delete(token):
+            .delete(token.concreteIdentity, range: token.concreteRange)
+        }
+    }
+}
 
 public struct LanguageRecoveryEvent<TokenKind, Token>: Sendable, Equatable, Identifiable
 where TokenKind: RawRepresentable & Hashable & Sendable,
