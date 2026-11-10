@@ -34,3 +34,61 @@ import Testing
     #expect(result.exploredStates == 4)
     #expect(result.reachedSearchLimit)
 }
+
+@Test func generalizedRecoveryQualityReportsExactRepairFacts() {
+    let result = GeneralizedRecoverySearch<String>().recover(
+        ["begin", "name", "end"], insertionCandidates: [";", "."],
+        policy: .init(maximumEditCost: 2, maximumExploredStates: 100)
+    ) { $0 == ["begin", "name", ";", "end", "."] }
+
+    #expect(result.quality.editCost == 2)
+    #expect(result.quality.insertionCount == 2)
+    #expect(result.quality.deletionCount == 0)
+    #expect(result.quality.exploredStates == result.exploredStates)
+    #expect(result.quality.resumedStates == 0)
+}
+
+@Test func generalizedRecoverySessionContinuesAfterBudgetExhaustion() {
+    let session = GeneralizedRecoverySearchSession<String>()
+    var recognitions = 0
+    let recognize: ([String]) -> Bool = {
+        recognitions += 1
+        return $0 == ["a", "b", "c"]
+    }
+    let first = session.recover(
+        ["a"], insertionCandidates: ["b", "c"],
+        policy: .init(maximumEditCost: 2, maximumExploredStates: 2),
+        recognizes: recognize)
+    #expect(first.reachedSearchLimit)
+    #expect(recognitions == 2)
+
+    let second = session.recover(
+        ["a"], insertionCandidates: ["b", "c"],
+        policy: .init(maximumEditCost: 2, maximumExploredStates: 100),
+        recognizes: recognize)
+    #expect(second.repairedInput == ["a", "b", "c"])
+    #expect(second.quality.resumedStates == 2)
+    #expect(recognitions == second.exploredStates)
+
+    let recognitionCount = recognitions
+    let repeated = session.recover(
+        ["a"], insertionCandidates: ["b", "c"],
+        policy: .init(maximumEditCost: 2, maximumExploredStates: 100),
+        recognizes: recognize)
+    #expect(repeated.repairedInput == second.repairedInput)
+    #expect(recognitions == recognitionCount)
+}
+
+@Test func generalizedRecoverySessionRestartsForChangedInput() {
+    let session = GeneralizedRecoverySearchSession<String>()
+    _ = session.recover(
+        ["a"], insertionCandidates: ["b"],
+        policy: .init(maximumEditCost: 1, maximumExploredStates: 1)) { _ in false }
+    let changed = session.recover(
+        ["x"], insertionCandidates: ["y"],
+        policy: .init(maximumEditCost: 1, maximumExploredStates: 4)) {
+            $0 == ["x", "y"]
+        }
+    #expect(changed.repairedInput == ["x", "y"])
+    #expect(changed.quality.resumedStates == 0)
+}

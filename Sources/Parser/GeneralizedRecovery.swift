@@ -28,6 +28,9 @@ public struct GeneralizedRepairSearchResult<Element: Hashable> {
     public let edits: [GeneralizedRepairEdit<Element>]
     public let exploredStates: Int
     public let reachedSearchLimit: Bool
+    /// Exact search and repair measurements. This deliberately avoids a
+    /// weighted "quality score" whose meaning would vary between languages.
+    public let quality: GeneralizedRepairQuality
 
     public var recovered: Bool { repairedInput != nil && !edits.isEmpty }
 
@@ -35,11 +38,47 @@ public struct GeneralizedRepairSearchResult<Element: Hashable> {
         repairedInput: [Element]?,
         edits: [GeneralizedRepairEdit<Element>],
         exploredStates: Int,
-        reachedSearchLimit: Bool
+        reachedSearchLimit: Bool,
+        resumedStates: Int = 0
     ) {
         self.repairedInput = repairedInput
         self.edits = edits
         self.exploredStates = exploredStates
+        self.reachedSearchLimit = reachedSearchLimit
+        self.quality = .init(
+            editCost: edits.count,
+            insertionCount: edits.reduce(0) {
+                if case .insert = $1 { return $0 + 1 }; return $0
+            },
+            deletionCount: edits.reduce(0) {
+                if case .delete = $1 { return $0 + 1 }; return $0
+            },
+            exploredStates: exploredStates,
+            resumedStates: resumedStates,
+            reachedSearchLimit: reachedSearchLimit)
+    }
+}
+
+/// Comparable facts about one recovery attempt. Lower repair cost is better;
+/// search work and resumption are reported separately from repair quality.
+public struct GeneralizedRepairQuality: Hashable, Codable, Sendable {
+    public let editCost: Int
+    public let insertionCount: Int
+    public let deletionCount: Int
+    public let exploredStates: Int
+    public let resumedStates: Int
+    public let reachedSearchLimit: Bool
+
+    public init(
+        editCost: Int, insertionCount: Int, deletionCount: Int,
+        exploredStates: Int, resumedStates: Int = 0,
+        reachedSearchLimit: Bool
+    ) {
+        self.editCost = editCost
+        self.insertionCount = insertionCount
+        self.deletionCount = deletionCount
+        self.exploredStates = exploredStates
+        self.resumedStates = resumedStates
         self.reachedSearchLimit = reachedSearchLimit
     }
 }
@@ -142,6 +181,118 @@ public struct GeneralizedRecoverySearch<Element: Hashable> {
             repairedInput: nil, edits: [], exploredStates: explored,
             reachedSearchLimit: false
         )
+    }
+}
+
+/// Stateful counterpart to ``GeneralizedRecoverySearch``. When a search hits
+/// its state budget, another call for the same input, candidates, and edit-cost
+/// bound continues the retained breadth-first queue. Raising only the state
+/// budget therefore performs new work instead of replaying old recognizer
+/// calls. A changed request starts a fresh checkpoint.
+public final class GeneralizedRecoverySearchSession<Element: Hashable> {
+    private struct State {
+        let input: [Element]
+        let edits: [GeneralizedRepairEdit<Element>]
+    }
+
+    private struct Request: Equatable {
+        let input: [Element]
+        let candidates: [Element]
+        let maximumEditCost: Int
+    }
+
+    private var request: Request?
+    private var queue: [State] = []
+    private var cursor = 0
+    private var visited: Set<[Element]> = []
+    private var explored = 0
+    private var completed: State?
+    private var exhausted = false
+
+    public init() {}
+
+    public func reset() {
+        request = nil; queue = []; cursor = 0; visited = []
+        explored = 0; completed = nil; exhausted = false
+    }
+
+    public func recover(
+        _ input: [Element],
+        insertionCandidates: [Element],
+        policy: GeneralizedRecoveryPolicy = .init(),
+        recognizes: ([Element]) throws -> Bool
+    ) rethrows -> GeneralizedRepairSearchResult<Element> {
+        var candidates: [Element] = []
+        var candidateSet = Set<Element>()
+        for candidate in insertionCandidates where candidateSet.insert(candidate).inserted {
+            candidates.append(candidate)
+        }
+        let nextRequest = Request(
+            input: input, candidates: candidates,
+            maximumEditCost: policy.maximumEditCost)
+        let isResume = request == nextRequest
+        let resumedAt = isResume ? explored : 0
+        if !isResume {
+            request = nextRequest
+            queue = [State(input: input, edits: [])]
+            cursor = 0
+            visited = [input]
+            explored = 0
+            completed = nil
+            exhausted = false
+        } else if let completed {
+            return .init(repairedInput: completed.input, edits: completed.edits,
+                         exploredStates: explored, reachedSearchLimit: false,
+                         resumedStates: resumedAt)
+        } else if exhausted {
+            return .init(repairedInput: nil, edits: [],
+                         exploredStates: explored, reachedSearchLimit: false,
+                         resumedStates: resumedAt)
+        }
+
+        while cursor < queue.count {
+            if explored >= policy.maximumExploredStates {
+                return .init(repairedInput: nil, edits: [],
+                             exploredStates: explored, reachedSearchLimit: true,
+                             resumedStates: resumedAt)
+            }
+            let state = queue[cursor]
+            cursor += 1
+            explored += 1
+            if try recognizes(state.input) {
+                completed = state
+                return .init(repairedInput: state.input, edits: state.edits,
+                             exploredStates: explored, reachedSearchLimit: false,
+                             resumedStates: resumedAt)
+            }
+            guard state.edits.count < policy.maximumEditCost else { continue }
+
+            var successors: [State] = []
+            for position in state.input.indices {
+                var repaired = state.input
+                let removed = repaired.remove(at: position)
+                successors.append(State(
+                    input: repaired,
+                    edits: state.edits + [.delete(removed, at: position)]))
+            }
+            for position in 0...state.input.count {
+                for candidate in candidates {
+                    var repaired = state.input
+                    repaired.insert(candidate, at: position)
+                    successors.append(State(
+                        input: repaired,
+                        edits: state.edits + [.insert(candidate, at: position)]))
+                }
+            }
+
+            for successor in successors where visited.insert(successor.input).inserted {
+                queue.append(successor)
+            }
+        }
+
+        exhausted = true
+        return .init(repairedInput: nil, edits: [], exploredStates: explored,
+                     reachedSearchLimit: false, resumedStates: resumedAt)
     }
 }
 

@@ -349,7 +349,12 @@ Recovering deterministic parsers share data and presentation while retaining the
 `ParseRecoveryEdit.incrementalAction` bridges the portable token-coordinate
 script to IncrementalParsing's source-coordinate repair algebra when a lexer or
 language kit supplies stable token IDs and UTF-16 ranges. Parser still does not
-own token identity or the repair-search algorithm.
+own token identity. For generalized engines it does own the bounded,
+deterministic minimum-edit search: `GeneralizedRecoverySearchSession` can pause
+at its state budget and continue the retained BFS frontier when that same
+request receives a larger budget. `GeneralizedRepairQuality` reports edit cost,
+edit shape, explored states, and resumed states without inventing a weighted
+quality score. Recognition and recovered forests remain engine-owned.
 
 ```swift
 public struct ParseDiagnostic: Error { /* source range, reason, message,
