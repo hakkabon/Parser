@@ -6,6 +6,12 @@ It was extracted from `Earley-Parser` — where this machinery was first built a
 
 If you're writing a new parser for the `hakkabon` grammar toolkit — Earley, CYK, GLR, LL, LR, whatever — this is almost certainly the module you build its parse forest on top of.
 
+Parser also owns the language-kit-neutral parse products in
+`LanguageParseProducts.swift`: stable syntax nodes, concrete terminals and
+trees, diagnostics, recovery records, parser descriptors, inputs, outputs,
+and reuse metrics. Language kits specialize these generic values instead of
+defining parallel parser contracts.
+
 ## Table of contents
 
 - [Mental model](#mental-model)
