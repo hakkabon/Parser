@@ -10,9 +10,9 @@ let package = Package(
         .library(name: "Parser", targets: ["Parser"]),
     ],
     dependencies: [
-        .package(path: "../Grammar"),
+        .package(url: "https://github.com/hakkabon/Grammar.git", .upToNextMinor(from: "0.9.1")),
         .package(url: "https://github.com/hakkabon/TerminalColors.git", .upToNextMinor(from: "0.1.0")),
-        .package(path: "../Incremental-Parsing"),
+        .package(url: "https://github.com/hakkabon/Incremental-Parsing.git", .upToNextMinor(from: "0.33.0")),
     ],
     targets: [
         .target(
